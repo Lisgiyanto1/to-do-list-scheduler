@@ -1,0 +1,20 @@
+# Laravel
+vendor
+node_modules
+.env
+.phpunit.result.cache
+/storage/*.key
+/storage/*.log
+/storage/*.cache
+/storage/debugbar
+/public/storage
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Docker
+docker-compose.override.yml
+.dockerignore

@@ -1,0 +1,105 @@
+version: "3.9"
+
+services:
+  # ======================
+  # Laravel PHP Backend
+  # ======================
+  app:
+    build:
+      context: ./backend
+    container_name: laravel_app
+    working_dir: /var/www
+    volumes:
+      - ./backend/laravel:/var/www
+    ports:
+      - "8000:8000" # untuk php artisan serve
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${PG_DB}
+      DB_USERNAME: ${PG_USER}
+      DB_PASSWORD: ${PG_PASSWORD}
+      REDIS_HOST: redis
+    depends_on:
+      - postgres
+      - redis
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    networks:
+      - app_network
+
+  # ======================
+  # Vue Frontend (Vite)
+  # ======================
+  frontend:
+    image: node:20
+    container_name: vue_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - app_network
+
+  # ======================
+  # PostgreSQL
+  # ======================
+  postgres:
+    image: postgres:16
+    container_name: postgres_db_to_do_list
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - app_network
+
+  # ======================
+  # Redis
+  # ======================
+  redis:
+    image: redis:7
+    container_name: redis_cache_to_do_list
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+
+  # ======================
+  # Laravel Queue Worker
+  # ======================
+  queue:
+    build:
+      context: ./backend
+    container_name: laravel_queue_to_do_list
+    working_dir: /var/www
+    command: php artisan queue:work --tries=3 --timeout=90
+    volumes:
+      - ./backend/laravel:/var/www
+    depends_on:
+      - app
+      - redis
+    networks:
+      - app_network
+
+# ======================
+# Network
+# ======================
+networks:
+  app_network:
+    driver: bridge
+
+# ======================
+# Volumes
+# ======================
+volumes:
+  pg_data:
