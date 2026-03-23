@@ -12,14 +12,15 @@ class Todo extends Model
 
     protected $fillable = [
         'title',
-        'assignee',
         'due_date',
         'time_tracked',
         'status',
-        'priority'
+        'priority',
+        'assignee_id',
     ];
 
     protected $keyType = 'string';
+    protected $hidden = ['assignee_id'];
     public $incrementing = false;
 
     protected static function boot(): void
@@ -35,7 +36,6 @@ class Todo extends Model
 
     public function assignee()
     {
-        return $this->belongsTo(User::class, 'assignee_id', 'id')
-            ->select(['id', 'name', 'email']);
+        return $this->belongsTo(User::class, 'assignee_id');
     }
 }

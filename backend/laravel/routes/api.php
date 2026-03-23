@@ -18,9 +18,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/todos/{id}', [TodoController::class, 'destroy']);
 
     Route::get('/todos/export', [TodoController::class, 'exportExcel']);
+
+
+    Route::get('/chart', [TodoController::class, 'chart']);
 });
 
 
 Route::get('/test', function () {
     return 'OK';
 });
+
+Route::get('/', function () {
+    return response()->json([
+        'message' => 'API is running'
+    ]);
+});
+
+
+

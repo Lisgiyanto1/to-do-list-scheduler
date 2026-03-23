@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ChartType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChartRequest;
 use App\Http\Requests\TodoRequest;
 use App\Models\Todo;
+use App\Services\ChartService;
 use App\Services\TodoService;
 use App\Exports\TodoExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -78,23 +81,14 @@ class TodoController extends Controller
         return Excel::download(new TodoExport($todos), 'todo_report.xlsx');
     }
 
-    public function chart(Request $request)
+    public function chart(ChartRequest $request, ChartService $service)
     {
-        $type = $request->query('type');
+        $type = ChartType::from($request->validated('type'));
 
-        try {
-            $data = $this->todoService->getChartData($type);
+        $data = $service->getSummary($type);
 
-            return response()->json([
-                'success' => true,
-                'data' => $data
-            ]);
-
-        } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        return response()->json([
+            $type->responseKey() => $data
+        ]);
     }
 }

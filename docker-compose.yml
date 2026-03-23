@@ -88,6 +88,9 @@ services:
     depends_on:
       - app
       - redis
+    environment:
+      REDIS_HOST: redis_cache_to_do_list
+      REDIS_PORT: 6379
     networks:
       - app_network
 

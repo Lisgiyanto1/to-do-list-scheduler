@@ -12,15 +12,24 @@ class TodoRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
+    public function rules()
     {
+        if ($this->isMethod('post')) {
+
+            return [
+                'title' => 'required|string',
+                'due_date' => 'required|date',
+                'status' => 'nullable|string',
+                'priority' => 'required|string',
+                'assignee_id' => 'nullable|uuid|exists:users,id',
+            ];
+        }
         return [
-            'title' => 'required|string|max:255',
-            'assignee_id' => 'nullable|exists:users,id',
-            'due_date' => 'required|date|after_or_equal:today',
-            'time_tracked' => 'nullable|numeric|min:0',
-            'status' => ['nullable', Rule::in(['pending', 'open', 'in_progress', 'completed'])],
-            'priority' => ['nullable', Rule::in(['low', 'medium', 'high'])],
+            'title' => 'sometimes|string',
+            'due_date' => 'sometimes|date',
+            'status' => 'nullable|string',
+            'priority' => 'sometimes|string',
+            'assignee_id' => 'nullable|uuid|exists:users,id',
         ];
     }
 }

@@ -13,7 +13,7 @@ class TodoService
         $data['priority'] = $data['priority'] ?? 'medium';
         $data['time_tracked'] = $data['time_tracked'] ?? 0;
 
-        return Todo::create([
+        $todo = Todo::create([
             'title' => $data['title'],
             'assignee_id' => $data['assignee_id'] ?? null,
             'due_date' => $data['due_date'],
@@ -21,6 +21,8 @@ class TodoService
             'status' => $data['status'],
             'priority' => $data['priority'],
         ]);
+
+        return $todo->load('assignee:id,name');
     }
 
     public function getById(string $id): Todo
@@ -56,12 +58,9 @@ class TodoService
     {
         $query = Todo::with('assignee');
 
-        // title partial match
         if (!empty($filters['title'])) {
             $query->where('title', 'like', '%' . $filters['title'] . '%');
         }
-
-        // assignee multiple
         if (!empty($filters['assignee'])) {
             $assignees = explode(',', $filters['assignee']);
             $query->whereHas('assignee', function ($q) use ($assignees) {
@@ -69,7 +68,6 @@ class TodoService
             });
         }
 
-        // due_date range
         if (!empty($filters['start'])) {
             $query->where('due_date', '>=', $filters['start']);
         }
@@ -77,7 +75,6 @@ class TodoService
             $query->where('due_date', '<=', $filters['end']);
         }
 
-        // time_tracked range
         if (isset($filters['min'])) {
             $query->where('time_tracked', '>=', $filters['min']);
         }
@@ -85,13 +82,11 @@ class TodoService
             $query->where('time_tracked', '<=', $filters['max']);
         }
 
-        // status multiple
         if (!empty($filters['status'])) {
             $statuses = explode(',', $filters['status']);
             $query->whereIn('status', $statuses);
         }
 
-        // priority multiple
         if (!empty($filters['priority'])) {
             $priorities = explode(',', $filters['priority']);
             $query->whereIn('priority', $priorities);
@@ -103,70 +98,30 @@ class TodoService
 
     public function getChartData(string $type): array
     {
-        switch ($type) {
-            case 'status':
-                $data = Todo::select('status')
-                    ->selectRaw('count(*) as total')
-                    ->groupBy('status')
-                    ->pluck('total', 'status')
-                    ->toArray();
+        $allowed = ['status', 'priority'];
 
-                // Pastikan semua status ada meski 0
+        if (!in_array($type, $allowed)) {
+            throw new \InvalidArgumentException('Invalid chart type');
+        }
+
+        $cacheKey = "chart_data_{$type}";
+
+        return Cache::remember($cacheKey, 60, function () use ($type) {
+            if ($type === 'status') {
                 return [
-                    'status_summary' => array_merge([
-                        'pending' => 0,
-                        'open' => 0,
-                        'in_progress' => 0,
-                        'completed' => 0,
-                    ], $data)
+                    'status_summary' => Todo::selectRaw('status, COUNT(*) as total')
+                        ->groupBy('status')
+                        ->pluck('total', 'status')
+                        ->toArray()
                 ];
+            }
 
-            case 'priority':
-                $data = Todo::select('priority')
-                    ->selectRaw('count(*) as total')
+            return [
+                'priority_summary' => Todo::selectRaw('priority, COUNT(*) as total')
                     ->groupBy('priority')
                     ->pluck('total', 'priority')
-                    ->toArray();
-
-                return [
-                    'priority_summary' => array_merge([
-                        'low' => 0,
-                        'medium' => 0,
-                        'high' => 0,
-                    ], $data)
-                ];
-
-            case 'assignee':
-                $todos = Todo::with('assignee')->get();
-
-                $summary = [];
-
-                foreach ($todos as $todo) {
-                    $name = $todo->assignee?->name ?? 'Unassigned';
-
-                    if (!isset($summary[$name])) {
-                        $summary[$name] = [
-                            'total_todos' => 0,
-                            'total_pending_todos' => 0,
-                            'total_timetracked_completed_todos' => 0,
-                        ];
-                    }
-
-                    $summary[$name]['total_todos'] += 1;
-
-                    if ($todo->status === 'pending') {
-                        $summary[$name]['total_pending_todos'] += 1;
-                    }
-
-                    if ($todo->status === 'completed') {
-                        $summary[$name]['total_timetracked_completed_todos'] += $todo->time_tracked;
-                    }
-                }
-
-                return ['assignee_summary' => $summary];
-
-            default:
-                throw new \InvalidArgumentException("Invalid chart type: $type");
-        }
+                    ->toArray()
+            ];
+        });
     }
 }
