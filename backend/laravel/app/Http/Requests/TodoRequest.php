@@ -22,6 +22,9 @@ class TodoRequest extends FormRequest
                 'status' => 'nullable|string',
                 'priority' => 'required|string',
                 'assignee_id' => 'nullable|uuid|exists:users,id',
+                'estimated_sp' => 'nullable|number',
+                'actual_sp' => 'nullable|number',
+                'type' => 'nullable|string'
             ];
         }
         return [
@@ -30,6 +33,9 @@ class TodoRequest extends FormRequest
             'status' => 'nullable|string',
             'priority' => 'sometimes|string',
             'assignee_id' => 'nullable|uuid|exists:users,id',
+            'estimated_sp' => 'nullable|number',
+            'actual_sp' => 'nullable|number',
+            'type' => 'nullable|string'
         ];
     }
 }

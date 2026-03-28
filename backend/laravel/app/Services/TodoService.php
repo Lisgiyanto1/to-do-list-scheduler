@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Todo;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Eloquent\Collection;
 
 class TodoService
 {
@@ -27,8 +28,9 @@ class TodoService
 
     public function getById(string $id): Todo
     {
+        // Menggunakan cache agar lebih cepat, pastikan relasi ikut terbawa
         return Cache::remember("todo:$id", 60, function () use ($id) {
-            return Todo::findOrFail($id);
+            return Todo::with('assignee:id,name')->findOrFail($id);
         });
     }
 
@@ -36,67 +38,91 @@ class TodoService
     {
         $todo = Todo::findOrFail($id);
         $todo->update($data);
+
         Cache::forget("todo:$id");
-        return $todo;
+        return $todo->load('assignee:id,name');
     }
 
     public function delete(string $id): bool
     {
         $todo = Todo::findOrFail($id);
         $todo->delete();
+
         Cache::forget("todo:$id");
         return true;
     }
 
-    public function list(): \Illuminate\Database\Eloquent\Collection
-    {
-        return Todo::orderBy('due_date', 'asc')->get();
-    }
-
-
     public function filterTodos(array $filters)
     {
-        $query = Todo::with('assignee');
+        $query = Todo::query()
+            ->with([
+                'assignee' => function ($query) {
+                    $query->select('id', 'name')
+                        ->with('developer:id,user_id,profile_picture,status_akun');
+                }
+            ])
+            ->select([
+                'id',
+                'title',
+                'assignee_id',
+                'due_date',
+                'time_tracked',
+                'status',
+                'priority',
+                'created_at'
+            ]);
 
-        if (!empty($filters['title'])) {
-            $query->where('title', 'like', '%' . $filters['title'] . '%');
-        }
-        if (!empty($filters['assignee'])) {
-            $assignees = explode(',', $filters['assignee']);
-            $query->whereHas('assignee', function ($q) use ($assignees) {
-                $q->whereIn('name', $assignees);
-            });
-        }
-
-        if (!empty($filters['start'])) {
-            $query->where('due_date', '>=', $filters['start']);
-        }
-        if (!empty($filters['end'])) {
-            $query->where('due_date', '<=', $filters['end']);
-        }
-
-        if (isset($filters['min'])) {
-            $query->where('time_tracked', '>=', $filters['min']);
-        }
-        if (isset($filters['max'])) {
-            $query->where('time_tracked', '<=', $filters['max']);
+        // 🔍 SEARCH (Menghilangkan strlen agar search box yang dihapus/backspace terdeteksi)
+        if (!empty($filters['search'])) {
+            $query->where('title', 'like', "%{$filters['search']}%");
         }
 
+        // 👤 FILTER ASSIGNEE
+        if (!empty($filters['assignee_id'])) {
+            $assignee = $filters['assignee_id'];
+            if ($assignee === 'me') {
+                $query->where('assignee_id', auth()->id());
+            } elseif ($assignee === 'unassigned' || $assignee === 'none') {
+                $query->whereNull('assignee_id');
+            } else {
+                $query->where('assignee_id', $assignee);
+            }
+        }
+
+        // 📊 FILTER STATUS & PRIORITY
         if (!empty($filters['status'])) {
-            $statuses = explode(',', $filters['status']);
-            $query->whereIn('status', $statuses);
+            $query->whereIn('status', explode(',', $filters['status']));
         }
-
         if (!empty($filters['priority'])) {
-            $priorities = explode(',', $filters['priority']);
-            $query->whereIn('priority', $priorities);
+            $query->whereIn('priority', explode(',', $filters['priority']));
         }
 
-        return $query->orderBy('due_date')->get();
+        // 📅 DATE RANGE & TIME
+        if (!empty($filters['start']))
+            $query->whereDate('due_date', '>=', $filters['start']);
+        if (!empty($filters['end']))
+            $query->whereDate('due_date', '<=', $filters['end']);
+        if (isset($filters['min']))
+            $query->where('time_tracked', '>=', (int) $filters['min']);
+        if (isset($filters['max']))
+            $query->where('time_tracked', '<=', (int) $filters['max']);
+
+        // 🔃 SORTING (SAFE)
+        $allowedSortColumns = ['created_at', 'title', 'priority', 'status', 'time_tracked', 'due_date'];
+        $sortBy = in_array($filters['sort_by'] ?? '', $allowedSortColumns) ? $filters['sort_by'] : 'created_at';
+        $sortOrder = strtolower($filters['sort_order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        $query->orderBy($sortBy, $sortOrder);
+
+        // 📄 PAGINATION
+        $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : 10;
+        return $query->paginate(min($perPage, 50));
     }
 
-
-    public function getChartData(string $type): array
+    /**
+     * Logic Chart dipusatkan di sini agar Controller tetap bersih
+     */
+    public function getChartSummary(string $type): array
     {
         $allowed = ['status', 'priority'];
 
@@ -107,19 +133,11 @@ class TodoService
         $cacheKey = "chart_data_{$type}";
 
         return Cache::remember($cacheKey, 60, function () use ($type) {
-            if ($type === 'status') {
-                return [
-                    'status_summary' => Todo::selectRaw('status, COUNT(*) as total')
-                        ->groupBy('status')
-                        ->pluck('total', 'status')
-                        ->toArray()
-                ];
-            }
-
+            $column = $type; // status atau priority
             return [
-                'priority_summary' => Todo::selectRaw('priority, COUNT(*) as total')
-                    ->groupBy('priority')
-                    ->pluck('total', 'priority')
+                "{$type}_summary" => Todo::selectRaw("$column, COUNT(*) as total")
+                    ->groupBy($column)
+                    ->pluck('total', $column)
                     ->toArray()
             ];
         });

@@ -9,30 +9,21 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/developer', [AuthController::class, 'developer']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/todos', [TodoController::class, 'index']);
     Route::post('/todos', [TodoController::class, 'store']);
+
+    Route::get('/todos/export', [TodoController::class, 'exportExcel']);
+    Route::get('/todos/chart', [TodoController::class, 'chart']);
+
     Route::get('/todos/{id}', [TodoController::class, 'show']);
     Route::put('/todos/{id}', [TodoController::class, 'update']);
     Route::delete('/todos/{id}', [TodoController::class, 'destroy']);
-
-    Route::get('/todos/export', [TodoController::class, 'exportExcel']);
-
-
-    Route::get('/chart', [TodoController::class, 'chart']);
 });
 
 
-Route::get('/test', function () {
-    return 'OK';
-});
-
-Route::get('/', function () {
-    return response()->json([
-        'message' => 'API is running'
-    ]);
-});
-
-
-
+Route::get('/test', fn() => 'OK');
+Route::get('/', fn() => response()->json(['message' => 'API is running']));

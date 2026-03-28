@@ -52,4 +52,13 @@ class UserService
 
         return true;
     }
+
+
+    // Tambahkan method ini di dalam class UserService
+    public function getCurrentDeveloper(string $id)
+    {
+        // Menggunakan getById yang sudah Anda buat karena sudah mem-filter password 
+        // melalui select(['id', 'name', 'email']) dan menyertakan relasi developer.
+        return $this->getById($id);
+    }
 }

@@ -73,4 +73,26 @@ class AuthController extends Controller
             'message' => 'Logout success'
         ]);
     }
+
+
+    /**
+     * Get the authenticated user profile (Developer)
+     */
+    public function developer()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User profile retrieved successfully',
+            'data' => $this->userService->getCurrentDeveloper($user->id)
+        ]);
+    }
 }

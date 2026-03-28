@@ -17,6 +17,10 @@ class Todo extends Model
         'status',
         'priority',
         'assignee_id',
+        'estimated_sp',
+        'actual_sp',
+        'type',
+        'created_at'
     ];
 
     protected $keyType = 'string';
