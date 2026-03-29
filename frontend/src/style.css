@@ -1,13 +1,44 @@
-@import "tailwindcss";
-
-@theme {
-
-  --font-display: "Montserrat", sans-serif;
-
+/* 1. Deklarasi Font Face (Pastikan path file sesuai) */
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
 }
 
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fonts/Ubuntu-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* 2. Import Tailwind */
+@import "tailwindcss";
+
+/* 3. Masukkan ke Theme Tailwind v4 */
+@theme {
+  --font-sans: "Ubuntu", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* 4. Implementasi Default ke Body */
 @layer base {
   body {
+    font-family: var(--font-sans);
     @apply bg-[#0f172a] text-white;
   }
 }

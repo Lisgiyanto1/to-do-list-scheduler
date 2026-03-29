@@ -71,13 +71,24 @@ class TodoController extends Controller
 
     public function update(TodoRequest $request, string $id): JsonResponse
     {
-        $todo = $this->todoService->update($id, $request->validated());
+        try {
+            // Cek apa isi validated data
+            // \Log::info($request->validated()); 
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Todo updated successfully',
-            'data' => $todo
-        ]);
+            $todo = $this->todoService->update($id, $request->validated());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Todo updated successfully',
+                'data' => $todo
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(), // Pesan error asli akan muncul di sini
+                'trace' => $e->getTrace()[0]   // Menunjukkan baris mana yang error
+            ], 500);
+        }
     }
 
     public function destroy(string $id): JsonResponse

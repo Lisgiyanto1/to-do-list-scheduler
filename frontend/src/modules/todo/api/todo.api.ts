@@ -19,7 +19,9 @@ export const createTodoApi = async (data: any) => {
 };
 
 export const updateTodoApi = async (id: string, data: any) => {
-    return await apiClient.put(`/todos/${id}`, data);
+    // Karena interceptor Anda sudah melakukan 'return response.data',
+    // kita cukup mengembalikan hasil panggilannya langsung.
+    return await apiClient.patch(`/todos/${id}`, data);
 };
 
 export const deleteTodoApi = async (id: string) => {

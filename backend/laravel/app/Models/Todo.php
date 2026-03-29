@@ -16,10 +16,10 @@ class Todo extends Model
         'time_tracked',
         'status',
         'priority',
+        'type',
         'assignee_id',
         'estimated_sp',
         'actual_sp',
-        'type',
         'created_at'
     ];
 

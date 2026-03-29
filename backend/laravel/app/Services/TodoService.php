@@ -37,10 +37,19 @@ class TodoService
     public function update(string $id, array $data): Todo
     {
         $todo = Todo::findOrFail($id);
+
+        // Filter hanya data yang ada di fillable untuk keamanan tambahan
         $todo->update($data);
 
         Cache::forget("todo:$id");
-        return $todo->load('assignee:id,name');
+
+        // Load relasi yang sama persis dengan index agar frontend tidak kaget/error
+        return $todo->load([
+            'assignee' => function ($query) {
+                $query->select('id', 'name')
+                    ->with('developer:id,user_id,profile_picture,status_akun');
+            }
+        ]);
     }
 
     public function delete(string $id): bool
@@ -69,6 +78,9 @@ class TodoService
                 'time_tracked',
                 'status',
                 'priority',
+                'type',
+                'estimated_sp',
+                'actual_sp',
                 'created_at'
             ]);
 

@@ -1,13 +1,11 @@
 <template>
     <div
         class="flex items-center justify-center h-[38px] w-full border-r border-slate-700/50 group relative overflow-hidden">
-
         <div v-if="value && value.id" class="flex items-center justify-center relative">
             <div class="w-7 h-7 rounded-full bg-slate-700 border border-slate-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm hover:scale-110 transition-transform overflow-hidden relative"
                 :title="`${value.name} (${value.developer?.status_akun || 'no status'})`">
 
-                <img v-if="value.developer?.profile_picture" :src="value.developer.profile_picture"
-                    class="w-full h-full object-cover" alt="profile" />
+                <img v-if="fullProfileUrl" :src="fullProfileUrl" class="w-full h-full object-cover" alt="profile" />
 
                 <span v-else>
                     {{ value.name?.charAt(0).toUpperCase() || '?' }}
@@ -28,11 +26,14 @@
                 </svg>
             </div>
         </div>
+
         <div class="absolute inset-0 cursor-pointer z-10" @click="handleEdit"></div>
     </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+
 interface AssigneeProps {
     id: string;
     name: string;
@@ -47,6 +48,16 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['save']);
+
+const fullProfileUrl = computed(() => {
+    const path = props.value?.developer?.profile_picture;
+    if (!path) return null;
+
+    if (path.startsWith('http')) return path;
+
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    return `${baseUrl}/storage/${path}`;
+});
 
 const handleEdit = () => {
     console.log("Edit assignee for ID:", props.value?.id);

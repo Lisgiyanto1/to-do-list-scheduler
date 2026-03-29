@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TodoController;
+use App\Http\Controllers\Api\DeveloperController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -11,6 +12,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/developer', [AuthController::class, 'developer']);
+    Route::match(['post', 'patch'], '/developer', [DeveloperController::class, 'update']);
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/todos', [TodoController::class, 'index']);
@@ -21,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/todos/{id}', [TodoController::class, 'show']);
     Route::put('/todos/{id}', [TodoController::class, 'update']);
+    Route::patch('/todos/{id}', [TodoController::class, 'update']);
     Route::delete('/todos/{id}', [TodoController::class, 'destroy']);
 });
 

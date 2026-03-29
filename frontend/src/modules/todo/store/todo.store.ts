@@ -13,6 +13,8 @@ export const useTodoStore = defineStore("todo", {
 
         page: 1,
         perPage: 10,
+
+        updatingField: {} as Record<string, boolean>,
     }),
 
     actions: {
@@ -44,6 +46,19 @@ export const useTodoStore = defineStore("todo", {
         setPerPage(p: number) {
             this.perPage = p;
             this.page = 1;
+        },
+
+        setFieldLoading(id: string, field: string, isLoading: boolean) {
+            const key = `${id}_${field}`;
+            if (isLoading) {
+                this.updatingField[key] = true;
+            } else {
+                delete this.updatingField[key];
+            }
+        },
+
+        isFieldLoading(id: string, field: string) {
+            return !!this.updatingField[`${id}_${field}`];
         }
     },
 });
