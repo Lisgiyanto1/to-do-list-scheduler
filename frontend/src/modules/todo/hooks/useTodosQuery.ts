@@ -33,7 +33,6 @@ export const useTodosQuery = () => {
     }));
 
     return useQuery({
-
         queryKey: computed(() => ["todos", params.value]),
         queryFn: () => getTodosApi(params.value),
         placeholderData: (prev) => prev,
@@ -47,19 +46,17 @@ export const useTodoMutations = () => {
 
     const createMutation = useMutation({
         mutationFn: createTodoApi,
-
         onSuccess: (response) => {
             console.log("Response dari server:", response);
             queryClient.invalidateQueries({ queryKey: ["todos"] });
         },
     });
-
+    
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: any }) => updateTodoApi(id, data),
         onMutate: async ({ id, data }) => {
             await queryClient.cancelQueries({ queryKey: ["todos"] });
             const previousTodos = queryClient.getQueryData(["todos"]);
-
             queryClient.setQueriesData({ queryKey: ["todos"] }, (oldData: any) => {
                 if (!oldData?.data?.data) return oldData;
                 return {

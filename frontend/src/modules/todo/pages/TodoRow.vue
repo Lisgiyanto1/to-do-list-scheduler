@@ -19,15 +19,15 @@
             <DeveloperCell :value="todo.assignee" />
         </td>
 
-        <!-- Contoh kolom Status -->
+        <!-- Status -->
         <SelectCell :todo-id="todo.id.toString()" :value="todo.status"
-            :options="['ready to start', 'in_progress', 'done']" category="status"
+            :options="['ready to start', 'in_progress', 'waiting for review', 'done']" category="status"
             @save="(val) => updateField('status', val)" />
 
         <!-- Priority  -->
         <td class="w-32 p-0 border-r border-slate-700/50">
             <SelectCell :todo-id="todo.id.toString()" :value="todo.priority || ''"
-                :options="['critical', 'high', 'medium', 'low', 'best effort']" category="priority"
+                :options="['critical', 'high', 'medium', 'low', 'best-effort']" category="priority"
                 @save="(val) => updateField('priority', val)" />
         </td>
 

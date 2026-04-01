@@ -1,5 +1,6 @@
 <template>
     <div class="flex flex-col items-start justify-between gap-4 mb-6 px-1">
+        <!-- TOP ROW: Title & Profile Actions -->
         <div class="flex justify-between items-center w-full">
             <h1 class="text-xl font-bold text-white flex items-center gap-2">
                 <span class="text-indigo-500">
@@ -42,13 +43,15 @@
             </div>
         </div>
 
+        <!-- BOTTOM ROW: Controls & Chart -->
         <div class="flex flex-col md:flex-row gap-3 ">
             <button @click="openCreateModal"
                 class="bg-indigo-600 cursor-pointer hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-lg active:scale-95 whitespace-nowrap">
                 + New Item
             </button>
 
-            <div class="flex flex-wrap items-center gap-3 w-full">
+            <div class="flex flex-wrap items-center gap-3 ">
+                <!-- Search -->
                 <div class="relative flex-1 min-w-[200px] group">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -61,6 +64,7 @@
                         class="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-all" />
                 </div>
 
+                <!-- Filter Person -->
                 <div class="relative">
                     <select v-model="assigneeFilter"
                         class="appearance-none bg-slate-900/50 border border-slate-700/50 rounded-lg py-2 pl-4 pr-10 text-sm text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer">
@@ -73,15 +77,41 @@
                     </div>
                 </div>
 
+                <!-- Sort Button -->
                 <button @click="store.setSort('priority')"
                     class="flex cursor-pointer items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
                     :class="{ 'border-indigo-500 text-indigo-400': store.sortBy === 'priority' }">
                     Sort <span v-if="store.sortBy === 'priority'">{{ store.sortOrder === 'asc' ? '↑' : '↓' }}</span>
                 </button>
+
+                <!-- KANBAN CHART (Positioned to the right of Sort) -->
+                <div v-if="isKanbanView" class="hidden sm:flex items-center ml-auto">
+                    <div
+                        class="flex w-32 h-10 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50 shadow-inner">
+                        <div v-for="segment in chartSegments" :key="segment.id"
+                            :class="[segment.color, 'h-full group relative transition-all duration-500 cursor-help']"
+                            :style="{ width: segment.width + '%' }">
+                            <!-- Tooltip with Status Name & Count -->
+                            <div
+                                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-[99]">
+                                <div
+                                    class="bg-slate-950 border border-slate-700 text-white text-[10px] px-2 py-1 rounded shadow-2xl whitespace-nowrap">
+                                    <span class="font-bold" :class="segment.textColor">{{ segment.label }}</span>: {{
+                                    segment.count }} Tasks
+                                </div>
+                                <div
+                                    class="w-1.5 h-1.5 bg-slate-950 border-r border-b border-slate-700 rotate-45 mx-auto -mt-[4px]">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
+    <!-- Modals (Create, Profile, Logout) -->
     <Transition name="fade">
         <div v-if="isCreateModalOpen"
             class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center backdrop-blur-sm p-4">
@@ -207,7 +237,7 @@
         <div v-if="isLogoutModalOpen"
             class="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center backdrop-blur-md p-4">
             <div
-                class="bg-[#1d1f27] border border-slate-700 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
+                class="bg-[#1d1f27] border border-slate-700 rounded-2xl w-1/4 max-sm shadow-2xl overflow-hidden p-6 text-center">
                 <div
                     class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -239,13 +269,14 @@
 import { apiClient } from "@/shared/lib/axios";
 import { ChevronDown, LogOut } from "@lucide/vue";
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { useTodoMutations } from "../hooks/useTodosQuery";
+import { useRoute } from "vue-router";
+import { useTodoMutations, useTodosQuery } from "../hooks/useTodosQuery"; // Asumsi hook ini ada untuk data chart
 import { useTodoStore } from "../store/todo.store";
 
-const router = useRouter();
+const route = useRoute();
 const store = useTodoStore();
 const { createMutation } = useTodoMutations();
+const { data: queryResponse } = useTodosQuery(); // Ambil data global
 
 const isCreateModalOpen = ref(false);
 const isProfileModalOpen = ref(false);
@@ -269,20 +300,43 @@ const profileForm = reactive({
     status_akun: "active"
 });
 
+// --- LOGIKA CHART ---
+const isKanbanView = computed(() => route.path.includes('kanban'));
+
+const todos = computed(() => {
+    const rootData = queryResponse.value;
+    const items = rootData?.data?.data || rootData?.data || [];
+    return Array.isArray(items) ? items : [];
+});
+
+const statusConfig = [
+    { id: 'ready to start', label: 'Ready', color: 'bg-blue-600', textColor: 'text-blue-400' },
+    { id: 'in_progress', label: 'In Progress', color: 'bg-amber-500', textColor: 'text-amber-400' },
+    { id: 'waiting for review', label: 'Review', color: 'bg-cyan-500', textColor: 'text-cyan-400' },
+    { id: 'done', label: 'Done', color: 'bg-emerald-500', textColor: 'text-emerald-400' }
+];
+
+const chartSegments = computed(() => {
+    const total = todos.value.length;
+    if (total === 0) return [];
+    return statusConfig.map(s => {
+        const count = todos.value.filter(t => t.status === s.id).length;
+        return { ...s, count, width: (count / total) * 100 };
+    }).filter(s => s.count > 0);
+});
+// --------------------
+
 const fetchUserData = async () => {
     try {
         const res: any = await apiClient.get("/developer");
         const responseData = res.data?.success ? res.data.data : res.data;
-
         if (responseData) {
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
             const profilePath = responseData.developer?.profile_picture;
-
             currentUser.value = {
                 ...responseData,
                 full_profile_picture: profilePath ? `${baseUrl}/storage/${profilePath}` : null
             };
-
             form.assignee_id = responseData.id;
             profileForm.name = responseData.name;
             profileForm.email = responseData.email;
@@ -299,9 +353,7 @@ const onFileSelected = (event: Event) => {
         const file = target.files[0];
         selectedFile.value = file;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            profilePreview.value = e.target?.result as string;
-        };
+        reader.onload = (e) => { profilePreview.value = e.target?.result as string; };
         reader.readAsDataURL(file);
     }
 };
@@ -314,20 +366,13 @@ const handleUpdateProfile = async () => {
         formData.append("email", profileForm.email);
         formData.append("status_akun", profileForm.status_akun);
         formData.append("_method", "PATCH");
-
-        if (selectedFile.value) {
-            formData.append("profile_picture", selectedFile.value);
-        }
-
+        if (selectedFile.value) formData.append("profile_picture", selectedFile.value);
         const res: any = await apiClient.post("/developer", formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
-
         if (res.success || res.data?.success) {
             await fetchUserData();
             isProfileModalOpen.value = false;
-            profilePreview.value = null;
-            selectedFile.value = null;
         }
     } catch (error: any) {
         alert(error.response?.data?.message || "Failed to update profile");
@@ -336,14 +381,8 @@ const handleUpdateProfile = async () => {
     }
 };
 
-const openCreateModal = () => {
-    if (!form.assignee_id) fetchUserData();
-    isCreateModalOpen.value = true;
-};
-
-const openProfileModal = () => {
-    isProfileModalOpen.value = true;
-};
+const openCreateModal = () => { if (!form.assignee_id) fetchUserData(); isCreateModalOpen.value = true; };
+const openProfileModal = () => { isProfileModalOpen.value = true; };
 
 const handleCreate = () => {
     if (!form.assignee_id) return;
@@ -360,11 +399,7 @@ const handleCreate = () => {
 const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    if (router) {
-        router.push("/login");
-    } else {
-        window.location.href = "/login";
-    }
+    window.location.href = "/login";
 };
 
 const searchModel = computed({

@@ -21,4 +21,5 @@ class ChartService
             $results->toArray()
         );
     }
+    
 }

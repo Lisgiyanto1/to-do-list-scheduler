@@ -51,13 +51,17 @@ export const useTodoStore = defineStore("todo", {
         setFieldLoading(id: string, field: string, isLoading: boolean) {
             const key = `${id}_${field}`;
             if (isLoading) {
-                this.updatingField[key] = true;
+                // Gunakan spread agar Vue mendeteksi perubahan object
+                this.updatingField = { ...this.updatingField, [key]: true };
             } else {
-                delete this.updatingField[key];
+                const newObj = { ...this.updatingField };
+                delete newObj[key];
+                this.updatingField = newObj;
             }
         },
 
-        isFieldLoading(id: string, field: string) {
+        // Ini adalah fungsi helper/action
+        isFieldLoading(id: string, field: string): boolean {
             return !!this.updatingField[`${id}_${field}`];
         }
     },

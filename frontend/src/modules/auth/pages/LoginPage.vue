@@ -55,7 +55,7 @@
                         class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 flex justify-center items-center">
 
                         <span v-if="isPending" class="flex flex-row gap-5">
-                            <Loader2Icon class="animate-spin"/>
+                            <Loader2Icon class="animate-spin" />
                             <p>Signing in...</p>
                         </span>
                         <span v-else>Sign In</span>
@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { Eye, EyeOff } from "@lucide/vue";
+import { Eye, EyeOff, Loader2Icon } from "@lucide/vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useLogin } from "../hooks/useLogin";
